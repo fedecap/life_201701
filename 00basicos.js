@@ -148,45 +148,50 @@ p("Vecinas",grillaAtexto(x));
 //********************************************************
 // 3: Calcula el proximo estado
 
-grillaProximoEst= function (grilla) {
+grillaProximoEst= function (grilla) { //U: calcula el proximo estado para una grilla aplicando las reglas
     var vivas=grillaVecinasVivas(grilla)
     var nueva=[];
+    var nuevaVivasCnt=0;
     for (var fila=0;fila<Filas;fila++) {
         for (var columna=0;columna<Columnas;columna++) {
             var v= celdaValor(vivas, fila, columna);
             if (celdaValor(grilla,fila,columna)=="*"){ //A: Está viva
-                if (v==2 || v==3){celdaCambiar(nueva,fila,columna,"*")}
+                if (v==2 || v==3){celdaCambiar(nueva,fila,columna,"*"); nuevaVivasCnt++;}
             }
             else {
-                if (v==3){celdaCambiar(nueva,fila,columna,"*")}
+                if (v==3){celdaCambiar(nueva,fila,columna,"*"); nuevaVivasCnt++;}
             }
         }
     }
-    return nueva;
+    return {grilla: nueva, vivasCnt: nuevaVivasCnt};
 }
 
 //******************************************************************
 // Animar
 
 animarJuego= function (grilla, pasos) {
-    var z= grilla;
-    for (var paso=0;paso<pasos;paso++){
-        var t= grillaAtexto(z)
+    var z= {grilla: grilla, nuevasCnt: 1};
+    for (var paso=0;paso<pasos && z.nuevasCnt>0;paso++){
+        var t= grillaAtexto(z.grilla);
         p("Paso "+paso, t);
         document.body.innerHTML='<pre>'+t+"</pre>"; //XXX: no anda porque no se ve la animacion y el browser no nos deja esperar entre cuadritos, ver abajo version "programacion functional"
-        z=grillaProximoEst(z)
+        z=grillaProximoEst(z.grilla)
     }
 }
 
 DemoraCuadritoMs= 1000;
-animarUnCuadrito= function (grilla,pasos,paso,despues) {
-    if (paso<pasos) {
-        var t= grillaAtexto(grilla);
+animarUnCuadrito= function (grilla, pasos, despues) { //u: esta llamamos para empezar la animacion
+    animarUnCuadritoImpl({grilla: grilla, vivasCnt: 1}, pasos,0,despues);
+}
+
+animarUnCuadritoImpl= function (grillaYcnt,pasos,paso,despues) { //U: esta es interna, la "recursiva" porque se llama a si misma
+    if (paso<pasos && grillaYcnt.vivasCnt>0) {
+        var t= grillaAtexto(grillaYcnt.grilla);
         p("Paso "+paso, t);
-        document.body.innerHTML='Paso '+paso+"\n"+grillaAhtml(grilla);
-        var z=grillaProximoEst(grilla);
+        document.body.innerHTML='Paso '+paso+"\n"+grillaAhtml(grillaYcnt.grilla);
+        var z=grillaProximoEst(grillaYcnt.grilla);
         //A: este paso, ya mostre todo y calcule proximo estado
-        setTimeout(function () { animarUnCuadrito(z,pasos,paso+1,despues)},DemoraCuadritoMs); 
+        setTimeout(function () { animarUnCuadritoImpl(z,pasos,paso+1,despues)},DemoraCuadritoMs); 
         //A: esperar UN segundo y volver a llamar a animarCuandrito con los valores para elcuadrito que sigue
     }
     else { //A: termine los pasos
